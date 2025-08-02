@@ -1,0 +1,2 @@
+# Edgeterminal
+Edge Investment Dashboard
