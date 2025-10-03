@@ -1,100 +1,48 @@
 import streamlit as st
-from modules.wallet import wallet_connect_component
-from modules.chatbot import chatbot_component
-from modules.portfolio import portfolio_component
-from modules.analytics import analytics_component
-from modules.signal_discovery import signal_discovery_component
-from modules.forecasting import forecasting_component
-from modules.narrative import narrative_component
-from modules.news_impact import news_impact_component
-from modules.research_reports import research_reports_component
-from modules.learning import learning_component
-from modules.onchain_forensics import onchain_forensics_component
-from modules.alpha_marketplace import alpha_marketplace_component
-from modules.smart_alerts import smart_alerts_component
-from modules.visualizations import visualizations_component
-from modules.compliance import compliance_component
+from importlib import import_module
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except Exception:
+    # dotenv is optional; environment variables may already be set
+    pass
 
 st.set_page_config(page_title="Edge Terminal Dashboard", layout="wide")
 st.title("🚀 Edge Terminal AI Dashboard")
 
 # Sidebar: Wallet Connect
-wallet_address = wallet_connect_component()
+wallet_module = import_module("modules.wallet")
+wallet_address = wallet_module.wallet_connect_component()
 
 st.divider()
 
-tabs = st.tabs([
-    "Portfolio",
-    "AI Copilot",
-    "Analytics",
-    "Signal Discovery",
-    "Forecasting",
-    "Narrative Evolution",
-    "News Impact",
-    "Research Reports",
-    "Learning/Adaptation",
-    "On-Chain Forensics",
-    "Alpha Marketplace",
-    "Smart Alerts",
-    "Visualizations",
-    "Compliance"
-])
+# Lazy-render a single section to reduce imports and execution on load
+sections = [
+    ("Portfolio", "portfolio", "📊 Portfolio Overview", "portfolio_component"),
+    ("AI Copilot", "chatbot", "💬 AI Copilot", "chatbot_component"),
+    ("Analytics", "analytics", "📈 Analytics & Insights", "analytics_component"),
+    ("Signal Discovery", "signal_discovery", "🧠 AI-Driven Signal Discovery", "signal_discovery_component"),
+    ("Forecasting", "forecasting", "🔮 Predictive & Generative Models", "forecasting_component"),
+    ("Narrative Evolution", "narrative", "📰 Narrative Evolution", "narrative_component"),
+    ("News Impact", "news_impact", "🌐 News/Event Impact Prediction", "news_impact_component"),
+    ("Research Reports", "research_reports", "📄 Automated Research Reports", "research_reports_component"),
+    ("Learning/Adaptation", "learning", "♻️ Continuous Learning & Adaptation", "learning_component"),
+    ("On-Chain Forensics", "onchain_forensics", "🔎 Advanced On-Chain Forensics", "onchain_forensics_component"),
+    ("Alpha Marketplace", "alpha_marketplace", "🚀 Alpha Discovery Marketplace", "alpha_marketplace_component"),
+    ("Smart Alerts", "smart_alerts", "⚡ Smart Alerting & Proactive Guidance", "smart_alerts_component"),
+    ("Visualizations", "visualizations", "📊 AI-Augmented Visualizations", "visualizations_component"),
+    ("Compliance", "compliance", "🛡️ Security & Compliance", "compliance_component"),
+]
 
-with tabs[0]:
-    st.header("📊 Portfolio Overview")
-    portfolio_component(wallet_address)
+labels = [label for (label, _, _, _) in sections]
+selected_label = st.sidebar.selectbox("Navigate", labels, index=0)
 
-with tabs[1]:
-    st.header("💬 AI Copilot")
-    chatbot_component(wallet_address)
+label_to_section = {label: (module_name, header, func_name) for (label, module_name, header, func_name) in sections}
+module_name, header, func_name = label_to_section[selected_label]
 
-with tabs[2]:
-    st.header("📈 Analytics & Insights")
-    analytics_component(wallet_address)
-
-with tabs[3]:
-    st.header("🧠 AI-Driven Signal Discovery")
-    signal_discovery_component(wallet_address)
-
-with tabs[4]:
-    st.header("🔮 Predictive & Generative Models")
-    forecasting_component(wallet_address)
-
-with tabs[5]:
-    st.header("📰 Narrative Evolution Prediction")
-    narrative_component(wallet_address)
-
-with tabs[6]:
-    st.header("🌐 News/Event Impact Prediction")
-    news_impact_component(wallet_address)
-
-with tabs[7]:
-    st.header("📄 Automated Research Reports")
-    research_reports_component(wallet_address)
-
-with tabs[8]:
-    st.header("♻️ Continuous Learning & Adaptation")
-    learning_component(wallet_address)
-
-with tabs[9]:
-    st.header("🔎 Advanced On-Chain Forensics")
-    onchain_forensics_component(wallet_address)
-
-with tabs[10]:
-    st.header("🚀 Alpha Discovery Marketplace")
-    alpha_marketplace_component(wallet_address)
-
-with tabs[11]:
-    st.header("⚡ Smart Alerting & Proactive Guidance")
-    smart_alerts_component(wallet_address)
-
-with tabs[12]:
-    st.header("📊 AI-Augmented Visualizations")
-    visualizations_component(wallet_address)
-
-with tabs[13]:
-    st.header("🛡️ Security & Compliance")
-    compliance_component(wallet_address)
+st.header(header)
+module = import_module(f"modules.{module_name}")
+getattr(module, func_name)(wallet_address)
 
 st.divider()
 st.markdown("Made with ❤️ for next-gen finance.")
