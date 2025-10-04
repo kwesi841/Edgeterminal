@@ -4,6 +4,8 @@ from ..models.token import Token
 from ..models.market import MarketCandle
 from datetime import datetime
 import argparse
+from ..services.narrative_scan import scan_rss
+from ..models.narrative import Narrative
 
 def run() -> None:
     db = SessionLocal()
@@ -29,6 +31,16 @@ def run() -> None:
                 )
                 db.merge(candle)
             db.commit()
+        # Persist daily narrative scan
+        freq = scan_rss()
+        for name, score in freq.items():
+            row = db.query(Narrative).filter(Narrative.name == name).first()
+            if not row:
+                row = Narrative(name=name, keywords=[], freq_score=score, status="Ready")
+            else:
+                row.freq_score = score
+            db.merge(row)
+        db.commit()
     finally:
         db.close()
 

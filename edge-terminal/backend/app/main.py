@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Request
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .logging_config import configure_logging
@@ -11,6 +11,8 @@ from .routers import narratives as narratives_router
 from .routers import risk as risk_router
 from .routers import portfolios as portfolios_router
 from .routers import alerts as alerts_router
+from .routers import tokens_detail as tokens_detail_router
+from .routers import correlation_route as correlation_router
 from .tasks.scheduler import create_scheduler
 from .db.init_db import init_db
 
@@ -26,17 +28,29 @@ configure_logging()
 
 app.include_router(auth_router.router)
 app.include_router(tokens_router.router)
+app.include_router(tokens_detail_router.router)
 app.include_router(settings_router.router)
 app.include_router(reports_router.router)
 app.include_router(signals_router.router)
 app.include_router(narratives_router.router)
 app.include_router(risk_router.router)
+app.include_router(correlation_router.router)
 app.include_router(portfolios_router.router)
 app.include_router(alerts_router.router)
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.middleware("http")
+async def add_timing_headers(request: Request, call_next):
+    import time
+    start = time.perf_counter()
+    response = await call_next(request)
+    dur_ms = int((time.perf_counter() - start) * 1000)
+    response.headers["X-Response-Time-ms"] = str(dur_ms)
+    return response
 
 @app.websocket("/ws/updates")
 async def ws_updates(websocket: WebSocket):
