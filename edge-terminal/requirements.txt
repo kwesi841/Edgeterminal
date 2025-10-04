@@ -13,4 +13,4 @@ numpy==2.1.2
 feedparser==6.0.11
 playwright==1.47.2
 reportlab==4.2.5
-wkhtmltopdf==0.2
+kaleido==0.2.1

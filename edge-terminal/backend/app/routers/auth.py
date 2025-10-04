@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from argon2 import PasswordHasher
 from ..schemas.auth import RegisterRequest, LoginRequest, TokenResponse
 from ..models.user import User
 from ..deps import get_db, create_access_token
+from ..utils.rate_limit import login_limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 ph = PasswordHasher()
@@ -21,7 +22,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     return TokenResponse(access_token=token)
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    ip = request.client.host if request.client else "unknown"
+    if not login_limiter.allow(f"login:{ip}"):
+        raise HTTPException(status_code=429, detail="Too many attempts. Please wait and try again.")
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
