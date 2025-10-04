@@ -1,4 +1,4 @@
-from ..services.data_ingest import fetch_top_tokens, fetch_ohlc
+from ..services.data_ingest import fetch_top_tokens, fetch_ohlc_and_volume
 from ..db.session import SessionLocal
 from ..models.token import Token
 from ..models.market import MarketCandle
@@ -16,12 +16,17 @@ def run() -> None:
             db.commit()
             tokens = db.query(Token).all()
         for tok in tokens:
-            ohlc = fetch_ohlc(tok.coingecko_id, days=1)
-            for row in ohlc:
-                ts = datetime.utcfromtimestamp(row[0] / 1000)
-                open_, high_, low_, close_ = map(float, row[1:5])
-                # Volume not in OHLC endpoint; approximate with 0 here; will be enriched elsewhere
-                candle = MarketCandle(token_id=tok.id, ts=ts, open=open_, high=high_, low=low_, close=close_, volume=0.0)
+            candles = fetch_ohlc_and_volume(tok.coingecko_id, days=1)
+            for c in candles:
+                candle = MarketCandle(
+                    token_id=tok.id,
+                    ts=c["ts"],
+                    open=c["open"],
+                    high=c["high"],
+                    low=c["low"],
+                    close=c["close"],
+                    volume=c["volume"],
+                )
                 db.merge(candle)
             db.commit()
     finally:
