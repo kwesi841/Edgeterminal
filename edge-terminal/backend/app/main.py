@@ -11,6 +11,8 @@ from .routers import narratives as narratives_router
 from .routers import risk as risk_router
 from .routers import portfolios as portfolios_router
 from .routers import alerts as alerts_router
+from .tasks.scheduler import create_scheduler
+from .db.init_db import init_db
 
 app = FastAPI(title="Edge Terminal API", version="0.1.0")
 app.add_middleware(
@@ -41,3 +43,9 @@ async def ws_updates(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"type": "hello", "message": "Edge Terminal WS connected"})
     await websocket.close()
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+    sched = create_scheduler()
+    sched.start()

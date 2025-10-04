@@ -1,4 +1,3 @@
-from sqlalchemy import text
 from ..models.base import Base
 from ..db.session import engine, SessionLocal
 from ..models import user, token, market, signal, narrative, portfolio, alert, report  # noqa: F401

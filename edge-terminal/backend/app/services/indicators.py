@@ -38,3 +38,24 @@ def vpoc(
     top_nodes_idx = np.argsort(vol_by_bin)[-5:]
     nodes = [float(centers[i]) for i in sorted(top_nodes_idx)]
     return float(centers[max_idx]), nodes
+
+# Helpers
+
+def ema(series: pd.Series, n: int) -> pd.Series:
+    return series.ewm(span=n, adjust=False).mean()
+
+
+def true_range(high: pd.Series, low: pd.Series, close: pd.Series) -> pd.Series:
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        (high - low),
+        (high - prev_close).abs(),
+        (low - prev_close).abs(),
+    ], axis=1).max(axis=1)
+    return tr.fillna(high - low)
+
+
+def rolling_zscore(series: pd.Series, window: int = 30) -> pd.Series:
+    mean = series.rolling(window).mean()
+    std = series.rolling(window).std(ddof=0)
+    return (series - mean) / (std.replace(0, np.nan))
