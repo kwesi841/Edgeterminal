@@ -3,13 +3,15 @@ from ..db.session import SessionLocal
 from ..models.token import Token
 from ..models.market import MarketCandle
 from datetime import datetime
+from ..config import settings
+from ..services.signal_builder import compute_latest_signal
 
 def run() -> None:
     db = SessionLocal()
     try:
         tokens = db.query(Token).all()
         if not tokens:
-            top = fetch_top_tokens(limit=25)
+            top = fetch_top_tokens(limit=settings.universe_size)
             for t in top:
                 token = Token(symbol=t["symbol"].upper(), name=t["name"], chain=None, coingecko_id=t["id"], tags=t.get("categories"))
                 db.add(token)
@@ -28,6 +30,8 @@ def run() -> None:
                     volume=c["volume"],
                 )
                 db.merge(candle)
+            db.commit()
+            compute_latest_signal(db, tok.id)
             db.commit()
     finally:
         db.close()

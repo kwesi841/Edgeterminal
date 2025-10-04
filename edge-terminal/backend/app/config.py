@@ -11,6 +11,7 @@ class Settings(BaseSettings):
         "https://cointelegraph.com/rss",
         "https://decrypt.co/feed",
     ]
+    universe_size: int = 25
     smtp_host: str | None = None
     smtp_port: int | None = None
     smtp_username: str | None = None
