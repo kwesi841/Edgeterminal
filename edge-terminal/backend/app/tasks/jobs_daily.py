@@ -3,6 +3,7 @@ from ..db.session import SessionLocal
 from ..models.token import Token
 from ..models.market import MarketCandle
 from datetime import datetime
+import argparse
 
 def run() -> None:
     db = SessionLocal()
@@ -30,3 +31,14 @@ def run() -> None:
             db.commit()
     finally:
         db.close()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--once", action="store_true", help="Run once and exit")
+    args = parser.parse_args()
+    run()
+
+
+if __name__ == "__main__":
+    main()

@@ -18,7 +18,13 @@ def scan_rss(sources: List[str] | None = None, keywords_map: Dict[str, List[str]
     counts = {k: 0 for k in keywords_map}
     total = 0
     for src in sources:
-        feed = feedparser.parse(src)
+        # Fetch via cached HTTP client to leverage ETag/IMS
+        try:
+            from .http_client import http_client
+            xml_text = http_client.get_text(src, ttl_seconds=1800)
+            feed = feedparser.parse(xml_text)
+        except Exception:
+            feed = feedparser.parse(src)
         for entry in feed.entries[:100]:
             text = (entry.get("title", "") + " " + entry.get("summary", "")).lower()
             for name, keys in keywords_map.items():

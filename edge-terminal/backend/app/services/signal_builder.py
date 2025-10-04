@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 from ..models.market import MarketCandle
 from ..models.signal import Signal
 from ..services.indicators import rsi_wilder, obv, vpoc, ema, true_range, rolling_zscore
+from ..services.risk_engine import realized_vol, risk_score
+from ..services.conviction import conviction_score
+from ..models.token import Token
 import pandas as pd
 from typing import Dict, Any
 
@@ -39,10 +42,35 @@ def compute_latest_signal(db: Session, token_id: int) -> None:
 
     social_chain_divergence = float((price_roc - obv_roc).iloc[-1])
 
-    float_stress_proxy = 0.5  # placeholder derived later with market_cap and realized vol
+    # Float stress proxy: normalize market cap vs 30D realized vol
+    tok = db.query(Token).filter(Token.id == token_id).first()
+    mcap = float(tok.market_cap or 0.0)
+    rv = realized_vol(close, 30)  # ~annualized
+    # Simple normalization heuristics
+    mcap_norm = min(1.0, mcap / 1e10)  # 10B reference
+    rv_norm = min(1.0, rv / 1.0)       # 1.0 annualized reference
+    float_stress_proxy = float(max(0.0, min(1.0, (mcap_norm + rv_norm) / 2)))
 
-    conviction = 50.0
-    risk = 50.0
+    # Compose features and compute scores
+    momentum = max(0.0, min(1.0, (rsi - 50.0) / 50.0))
+    features_conv = {
+        "momentum": momentum,
+        "whale_inflow_proxy": max(0.0, min(1.0, whale_inflow_proxy)),
+        "narrative": 0.0,
+        "correlation_fit": 0.5,
+        "float_stress_inv": 1.0 - float_stress_proxy,
+        "funding_skew_proxy": max(0.0, min(1.0, funding_skew_proxy + 0.5)),
+    }
+    conviction = conviction_score(features_conv)
+
+    features_risk = {
+        "realized_vol": min(1.0, rv / 1.0),
+        "float_stress_proxy": float_stress_proxy,
+        "volume_tr_z": max(0.0, min(1.0, abs(oi_delta_proxy) / 3.0)),
+        "corr_btc_eth": 0.5,
+        "funding_skew_proxy_abs": max(0.0, min(1.0, abs(funding_skew_proxy))),
+    }
+    risk = risk_score(features_risk)
 
     sig = Signal(
         token_id=token_id,

@@ -18,7 +18,7 @@ def fetch_top_tokens(limit: int = 25) -> List[Dict[str, Any]]:
         "sparkline": "false",
         "price_change_percentage": "24h",
     }
-    data = http_client.get(url, params=params, ttl_seconds=3600)
+    data = http_client.get_json(url, params=params, ttl_seconds=3600)
     return data[:limit]
 
 
@@ -26,14 +26,14 @@ def fetch_ohlc_and_volume(coingecko_id: str, days: int = 90, interval: str | Non
     # OHLC
     url_ohlc = f"{COINGECKO}/coins/{coingecko_id}/ohlc"
     params_ohlc = {"vs_currency": "usd", "days": days}
-    ohlc = http_client.get(url_ohlc, params=params_ohlc, ttl_seconds=900)
+    ohlc = http_client.get_json(url_ohlc, params=params_ohlc, ttl_seconds=900)
 
     # Volumes via market_chart
     url_mc = f"{COINGECKO}/coins/{coingecko_id}/market_chart"
     params_mc = {"vs_currency": "usd", "days": days}
     if interval:
         params_mc["interval"] = interval
-    mc = http_client.get(url_mc, params=params_mc, ttl_seconds=900)
+    mc = http_client.get_json(url_mc, params=params_mc, ttl_seconds=900)
     volumes = mc.get("total_volumes", [])
 
     # Build per-candle volume by differencing and aligning timestamps

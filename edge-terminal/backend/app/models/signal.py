@@ -1,9 +1,13 @@
-from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.dialects.sqlite import JSON
 from .base import Base
 
 class Signal(Base):
     __tablename__ = "signals"
+    __table_args__ = (
+        UniqueConstraint("token_id", "ts", name="uix_signal_token_ts"),
+        Index("ix_signal_ts", "ts"),
+    )
 
     id = Column(Integer, primary_key=True)
     token_id = Column(Integer, ForeignKey("tokens.id"), index=True, nullable=False)
